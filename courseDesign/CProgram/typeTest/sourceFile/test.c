@@ -14,7 +14,7 @@ int main(){
     do{
         startGame();
         printf("\n*Do it again? [y/n]: ");
-        while(1){//the loop to judge if you input is [y/n]
+        while(1){//the loop to judge if your input is [y/n]
             scanf("%s", restartFlag);
             getchar();//Catch the extra "Enter"
             //if the input is [y/n], break while n' into do-while
