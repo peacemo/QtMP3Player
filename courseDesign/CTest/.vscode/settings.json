@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "btncallback.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}
