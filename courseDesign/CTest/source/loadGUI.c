@@ -1,5 +1,5 @@
 #include "loadGUI.h"
-#include "mPlay.h"
+#include "header.h"
 #define FIFO "../tmp/myfifo"
 //callBack funcs
 void deal_pressed(GtkButton *button, gpointer user_data);
@@ -7,6 +7,7 @@ void toggle_button_callback (GtkWidget *widget, gpointer data);
 void deal_pressed_vol(GtkButton *button, gpointer user_data);
 gint progress_timeout(gpointer data);
 void initProgress();
+void myGtkMainQuit();
 
 //globle variases
 GtkWidget *songName;
@@ -31,7 +32,7 @@ void loadGUI(){
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);//position
     gtk_widget_set_size_request(window, 330, 600);//size
     gtk_window_set_resizable(GTK_WINDOW(window), FALSE);//
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit),NULL);//close
+    g_signal_connect(window, "destroy", G_CALLBACK(myGtkMainQuit),NULL);//close
 
     //fixed layout
     fixed = gtk_fixed_new();
@@ -156,6 +157,7 @@ void deal_pressed(GtkButton *button, gpointer user_data)
         }
         sprintf(cmd, "loadfile \"../music/%s.mp3\"\n", rows[flagOfSong]);
         write(fd, cmd, strlen(cmd));
+        gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (songProgress), 0);
         gtk_label_set_label(GTK_LABEL(songName), rows[flagOfSong]);
     }
     if(strcmp(user_data, "上一曲") == 0){
@@ -165,6 +167,7 @@ void deal_pressed(GtkButton *button, gpointer user_data)
         }
         sprintf(cmd, "loadfile \"../music/%s.mp3\"\n", rows[flagOfSong]);
         write(fd, cmd, strlen(cmd));
+        gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (songProgress), 0);
         gtk_label_set_label(GTK_LABEL(songName), rows[flagOfSong]);
     }
     if(strcmp(user_data, "backward") == 0){
@@ -249,15 +252,21 @@ gint progress_timeout(gpointer data)
 {
     gdouble new_val;
     new_val = gtk_progress_bar_get_fraction (GTK_PROGRESS_BAR (songProgress)) + 0.0023;
-
-      
     if (new_val > 1.0){
 	    new_val = 0.0;
     }
       /* 设置进度条的新值 */
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (songProgress), new_val);
   return TRUE;
-} 
+}
+
+//myGtkMainQuit
+//overide gtk_main_quit
+//kill the mplayer as
+void myGtkMainQuit(){
+    write(fd, "quit\n", strlen("quit\n"));
+    gtk_main_quit();
+}
 
 //initialize progress
 //create a fifo file as a pipe 
@@ -272,18 +281,33 @@ void initProgress(){
     }
     fd = open(FIFO, O_RDWR);//get the file describtion symbol
     // loadGUI();
-    int pid = 0;
-    pid = fork();//create pprogress
-    if (pid <0)
-    {
+    int pid1 = 0, pid2 = 0;
+    pid1 = fork();//create pprogress
+    
+    if (pid1 < 0){
         perror("fork");
     }
-    else if (pid == 0)//child progress
-    {
+    else if (pid1 == 0){//child progress
         execlp("mplayer","mplayer","-ac", "mad", "-slave","-quiet","-idle","-input","file=../tmp/myfifo","../music/Hey Jude - The Beatles.mp3",NULL);
+        
     }
     else{//parent progress
         loadGUI();
         write(fd, "volume 50 1\n", strlen("volume 50 1\n"));
+
+        // pid2 = fork();
+        // if(pid2 < 0){
+        //     perror("fork");
+        // }
+        // if(pid2 == 0){
+        //     char buf[128] = {'\0'};
+        //     int pos = 0;
+        //     while(1){
+        //         read(fd, buf, strlen(buf));
+        //         pos = (double)atoi(buf)/100.0;
+        //         gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (songProgress), pos);
+        //     }
+        // }
     }
+    
 }
